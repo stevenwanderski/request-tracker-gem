@@ -70,8 +70,8 @@ module RequestTracker
 
       Thread.new(payload) do |payload|
         begin
-          # url = "https://request-tracker-33339aabecdd.herokuapp.com/requests"
-          url = "http://localhost:3001/requests"
+          url = "https://request-tracker-33339aabecdd.herokuapp.com/requests"
+          # url = "http://localhost:3001/requests"
 
           Net::HTTP.post(
             URI(url),
