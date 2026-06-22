@@ -16,7 +16,8 @@ module RequestTracker
     end
 
     def run(env)
-      ignored_hosts = ["localhost:3001", "request-tracker-33339aabecdd.herokuapp.com"]
+      api_url = ENV.fetch("REQUEST_TRACKER_API_URL", "https://request-tracker-33339aabecdd.herokuapp.com/requests")
+      ignored_hosts = [api_url]
 
       RequestTracker::Current.outbound_calls = []
       RequestTracker::Current.enqueued_jobs = []
@@ -71,11 +72,8 @@ module RequestTracker
 
       Thread.new(payload) do |payload|
         begin
-          url = "https://request-tracker-33339aabecdd.herokuapp.com/requests"
-          # url = "http://localhost:3001/requests"
-
           Net::HTTP.post(
-            URI(url),
+            URI(api_url),
             payload.to_json,
             "Content-Type" => "application/json"
           )
