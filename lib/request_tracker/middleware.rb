@@ -16,7 +16,7 @@ module RequestTracker
     end
 
     def run(env)
-      ignored_hosts = ["localhost:3001", "trixieapp.com"]
+      ignored_hosts = ["localhost:3001", "request-tracker-33339aabecdd.herokuapp.com"]
 
       RequestTracker::Current.outbound_calls = []
       RequestTracker::Current.enqueued_jobs = []
@@ -71,9 +71,9 @@ module RequestTracker
       Thread.new(payload) do |payload|
         begin
           Net::HTTP.post(
-            URI('https://trixieapp.com/requests'),
+            URI("https://request-tracker-33339aabecdd.herokuapp.com/requests"),
             payload.to_json,
-            'Content-Type' => 'application/json'
+            "Content-Type" => "application/json"
           )
         rescue => e
           ap "Background POST /requests failed: #{e.class}: #{e.message}"
