@@ -1,6 +1,7 @@
 module RequestTracker
   class Middleware
     IGNORED_PREFIXES = %w[/assets /packs /favicon.ico /cable].freeze
+    DEFAULT_API_URL = "https://request-tracker-33339aabecdd.herokuapp.com/requests".freeze
 
     def initialize(app)
       @app = app
@@ -10,13 +11,14 @@ module RequestTracker
       return run(env) unless Rails.env.development?
 
       RequestTracker::Middleware.send(:remove_const, :IGNORED_PREFIXES) if RequestTracker::Middleware.const_defined?(:IGNORED_PREFIXES)
+      RequestTracker::Middleware.send(:remove_const, :DEFAULT_API_URL) if RequestTracker::Middleware.const_defined?(:DEFAULT_API_URL)
       load __FILE__
       load File.join(__dir__, 'net_http_patch.rb')
       ::RequestTracker::Middleware.new(@app).run(env)
     end
 
     def run(env)
-      api_url = ENV.fetch("REQUEST_TRACKER_API_URL", "https://request-tracker-33339aabecdd.herokuapp.com/requests")
+      api_url = ENV.fetch("REQUEST_TRACKER_API_URL", DEFAULT_API_URL)
       ignored_hosts = [api_url]
 
       RequestTracker::Current.outbound_calls = []
@@ -57,7 +59,7 @@ module RequestTracker
       payload = {
         flow_id: request.session[:flow_id],
         app_id: ENV["REQUEST_TRACKER_APP_ID"],
-        referrer: request.referer,
+        referer: request.referer,
         path: request.path,
         method: request.method,
         status_code: status,
@@ -71,6 +73,8 @@ module RequestTracker
       payload[:error] = error_payload if error_payload.present?
 
       Thread.new(payload) do |payload|
+        api_url = ENV.fetch("REQUEST_TRACKER_API_URL", DEFAULT_API_URL)
+
         begin
           Net::HTTP.post(
             URI(api_url),
