@@ -1,3 +1,5 @@
+require "net/http"
+
 module Net
   class HTTP
     alias orig_request request unless method_defined?(:orig_request)
