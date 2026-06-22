@@ -56,6 +56,7 @@ module RequestTracker
       payload = {
         flow_id: request.session[:flow_id],
         app_id: ENV["REQUEST_TRACKER_APP_ID"],
+        referrer: request.referer,
         path: request.path,
         method: request.method,
         status_code: status,
