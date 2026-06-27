@@ -4,7 +4,7 @@ module RequestTracker
       return yield if !RequestTracker::Current.enqueued_jobs
 
       RequestTracker::Current.enqueued_jobs << {
-        class: worker_class,
+        worker_class: worker_class,
         args: job["args"],
         queue: queue,
         jid: job["jid"]
