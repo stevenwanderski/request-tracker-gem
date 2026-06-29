@@ -1,6 +1,10 @@
 module RequestTracker
   class SidekiqClientMiddleware
     def call(worker_class, job, queue, _redis_pool)
+      if !RequestTracker.config.enabled_environments.include?(Rails.env)
+        return yield
+      end
+
       return yield if !RequestTracker::Current.enqueued_jobs
 
       RequestTracker::Current.enqueued_jobs << {

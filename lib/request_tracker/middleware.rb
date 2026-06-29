@@ -18,6 +18,10 @@ module RequestTracker
     end
 
     def run(env)
+      if !RequestTracker.config.enabled_environments.include?(Rails.env)
+        return @app.call(env)
+      end
+
       api_url = ENV.fetch("REQUEST_TRACKER_API_URL", DEFAULT_API_URL)
       ignored_hosts = [api_url]
 
