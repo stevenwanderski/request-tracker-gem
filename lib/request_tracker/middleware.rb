@@ -8,13 +8,7 @@ module RequestTracker
     end
 
     def call(env)
-      return run(env) unless Rails.env.development?
-
-      RequestTracker::Middleware.send(:remove_const, :IGNORED_PREFIXES) if RequestTracker::Middleware.const_defined?(:IGNORED_PREFIXES)
-      RequestTracker::Middleware.send(:remove_const, :DEFAULT_API_URL) if RequestTracker::Middleware.const_defined?(:DEFAULT_API_URL)
-      load __FILE__
-      load File.join(__dir__, 'net_http_patch.rb')
-      ::RequestTracker::Middleware.new(@app).run(env)
+      run(env)
     end
 
     def run(env)
