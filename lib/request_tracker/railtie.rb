@@ -11,6 +11,20 @@ module RequestTracker
             chain.add RequestTracker::SidekiqClientMiddleware
           end
         end
+
+        Sidekiq.configure_server do |config|
+          config.server_middleware do |chain|
+            chain.add RequestTracker::SidekiqServerMiddleware
+          end
+        end
+      end
+    end
+
+    initializer "request_tracker.mailer_tracking" do |app|
+      if defined?(ActionMailer)
+        ActionMailer::Base.register_interceptor(RequestTracker::MailerInterceptor)
+        RequestTracker::MailerEnqueueSubscriber.subscribe
+        RequestTracker::MailerPerformSubscriber.subscribe
       end
     end
 

@@ -21,13 +21,14 @@ module RequestTracker
 
       RequestTracker::Current.outbound_calls = []
       RequestTracker::Current.enqueued_jobs = []
+      RequestTracker::Current.sent_mailers = []
+      RequestTracker::Current.enqueued_mailers = []
 
       request = ActionDispatch::Request.new(env)
 
       if IGNORED_PREFIXES.any? { |prefix| request.path.starts_with?(prefix) }
         return @app.call(env)
       end
-
       if ignored_hosts.include?(request.host_with_port)
         return @app.call(env)
       end
@@ -64,6 +65,8 @@ module RequestTracker
         request_body: request.filtered_parameters,
         outbound_calls: RequestTracker::Current.outbound_calls,
         enqueued_jobs: RequestTracker::Current.enqueued_jobs,
+        sent_mailers: RequestTracker::Current.sent_mailers,
+        enqueued_mailers: RequestTracker::Current.enqueued_mailers,
         api_token: ENV["REQUEST_TRACKER_API_TOKEN"]
       }
 
@@ -80,7 +83,7 @@ module RequestTracker
             "Content-Type" => "application/json"
           )
         rescue => e
-          ap "Background POST /requests failed: #{e.class}: #{e.message}"
+          warn "[request_tracker] Background POST /requests failed: #{e.class}: #{e.message}"
         end
       end
     end
