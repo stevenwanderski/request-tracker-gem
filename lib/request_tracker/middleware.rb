@@ -77,11 +77,12 @@ module RequestTracker
         api_url = ENV.fetch("REQUEST_TRACKER_API_URL", DEFAULT_API_URL)
 
         begin
-          Net::HTTP.post(
+          response = Net::HTTP.post(
             URI(api_url),
             payload.to_json,
             "Content-Type" => "application/json"
           )
+          warn "[request_tracker] POST /requests rejected: #{response.code} #{response.body}" if !response.is_a?(Net::HTTPSuccess)
         rescue => e
           warn "[request_tracker] Background POST /requests failed: #{e.class}: #{e.message}"
         end
