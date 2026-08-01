@@ -33,11 +33,9 @@ module RequestTracker
       }
 
       Thread.new(payload) do |payload|
-        api_url = mailer_api_url
-
         begin
           response = Net::HTTP.post(
-            URI(api_url),
+            URI(mailer_api_url),
             payload.to_json,
             "Content-Type" => "application/json"
           )
