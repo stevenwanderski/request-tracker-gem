@@ -67,6 +67,7 @@ module RequestTracker
         enqueued_jobs: RequestTracker::Current.enqueued_jobs,
         sent_mailers: RequestTracker::Current.sent_mailers,
         enqueued_mailers: RequestTracker::Current.enqueued_mailers,
+        current_user: current_user_data(request),
         api_token: ENV["REQUEST_TRACKER_API_TOKEN"]
       }
 
@@ -87,6 +88,24 @@ module RequestTracker
           warn "[request_tracker] Background POST /requests failed: #{e.class}: #{e.message}"
         end
       end
+    end
+
+    private
+
+    # The parent app's callback is arbitrary code we don't control, running
+    # inside Rack middleware on every single request -- a bug in it must never
+    # take down the actual app, so it's never allowed to raise past here.
+    #
+    # Whatever the callback returns -- an ID, a string, or a full model
+    # instance -- is passed through #as_json so it travels as plain,
+    # JSON-safe data (a Hash for a model, or itself for a scalar).
+    def current_user_data(request)
+      return nil if !RequestTracker.config.current_user
+
+      RequestTracker.config.current_user.call(request)&.as_json
+    rescue => e
+      warn "[request_tracker] current_user callback raised: #{e.class}: #{e.message}"
+      nil
     end
   end
 end
