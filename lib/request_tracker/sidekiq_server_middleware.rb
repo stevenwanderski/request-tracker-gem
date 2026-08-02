@@ -6,6 +6,7 @@ module RequestTracker
       end
 
       RequestTracker::Current.executing_job_id = job["jid"]
+      RequestTracker::Current.outbound_calls = []
       started_at = Time.current
 
       begin
@@ -17,6 +18,7 @@ module RequestTracker
       end
     ensure
       RequestTracker::Current.executing_job_id = nil
+      RequestTracker::Current.outbound_calls = nil
     end
 
     private
@@ -33,6 +35,7 @@ module RequestTracker
         status: status,
         started_at: started_at,
         completed_at: Time.current,
+        outbound_calls: RequestTracker::Current.outbound_calls,
         error: error && {
           error_class: error.class.name,
           message: error.message,

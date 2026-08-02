@@ -1,6 +1,6 @@
 module RequestTracker
   class JobLogReporter
-    def self.report(jid:, worker_class:, queue:, args:, status:, started_at:, completed_at:, error: nil)
+    def self.report(jid:, worker_class:, queue:, args:, status:, started_at:, completed_at:, outbound_calls: nil, error: nil)
       payload = {
         jid: jid,
         app_id: ENV["REQUEST_TRACKER_APP_ID"],
@@ -10,6 +10,7 @@ module RequestTracker
         status: status,
         started_at: started_at,
         completed_at: completed_at,
+        outbound_calls: outbound_calls,
         api_token: ENV["REQUEST_TRACKER_API_TOKEN"]
       }
       payload[:error] = error if error
