@@ -41,7 +41,7 @@ module RequestTracker
         error_payload = {
           error_class: e.class,
           message: e.message,
-          stack_trace: e.backtrace
+          stack_trace: RequestTracker::BacktraceContext.build(e)
         }
 
         report(request: request, status: "500", headers: headers, error_payload: error_payload)

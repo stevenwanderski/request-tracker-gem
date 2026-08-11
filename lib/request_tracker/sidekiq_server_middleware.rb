@@ -39,7 +39,7 @@ module RequestTracker
         error: error && {
           error_class: error.class.name,
           message: error.message,
-          backtrace: error.backtrace
+          backtrace: RequestTracker::BacktraceContext.build(error)
         }
       )
     end
