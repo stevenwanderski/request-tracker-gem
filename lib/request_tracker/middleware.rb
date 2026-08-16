@@ -63,6 +63,7 @@ module RequestTracker
         method: request.method,
         status_code: status,
         request_body: request.filtered_parameters,
+        user_agent: request.user_agent,
         outbound_calls: RequestTracker::Current.outbound_calls,
         enqueued_jobs: RequestTracker::Current.enqueued_jobs,
         sent_mailers: RequestTracker::Current.sent_mailers,
