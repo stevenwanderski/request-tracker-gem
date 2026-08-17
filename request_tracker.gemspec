@@ -19,4 +19,5 @@ Gem::Specification.new do |spec|
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
   spec.add_dependency "rails", ">= 7.0"
+  spec.add_dependency "nokogiri"
 end

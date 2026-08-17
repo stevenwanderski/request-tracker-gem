@@ -13,20 +13,8 @@ module Net
         return response
       end
 
-      request_is_json = req['Content-Type']&.include?('application/json')
-      response_is_json = response['Content-Type']&.include?('application/json')
-
-      begin
-        request_body = request_is_json ? JSON.parse(req.body) : req.body
-      rescue
-        request_body = req.body
-      end
-
-      begin
-        response_body = response_is_json ? JSON.parse(response.body) : response.body
-      rescue
-        response_body = response.body
-      end
+      request_body = RequestTracker::BodyScrubber.scrub_body(req.body, req['Content-Type'])
+      response_body = RequestTracker::BodyScrubber.scrub_body(response.body, response['Content-Type'])
 
       RequestTracker::Current.outbound_calls << {
         url: "#{use_ssl? ? 'https' : 'http'}://#{address}#{req.path}",
