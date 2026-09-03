@@ -49,12 +49,14 @@ module RequestTracker
         raise
       end
 
-      report(request: request, status: status, headers: headers)
+      response_body, response = capture_json_response_body(headers, response)
+
+      report(request: request, status: status, headers: headers, response_body: response_body)
 
       [status, headers, response]
     end
 
-    def report(request:, status:, headers:, error_payload: nil)
+    def report(request:, status:, headers:, response_body: nil, error_payload: nil)
       payload = {
         flow_id: request.session[:flow_id],
         app_id: ENV["REQUEST_TRACKER_APP_ID"],
@@ -65,6 +67,7 @@ module RequestTracker
         request_body: request.filtered_parameters,
         user_agent: request.user_agent,
         headers: request_headers(request),
+        response_body: response_body,
         outbound_calls: RequestTracker::Current.outbound_calls,
         enqueued_jobs: RequestTracker::Current.enqueued_jobs,
         sent_mailers: RequestTracker::Current.sent_mailers,
@@ -135,6 +138,23 @@ module RequestTracker
       end
 
       headers
+    end
+
+    # Only JSON responses are captured -- anything else (HTML pages, file
+    # downloads, streamed/live responses) is left completely untouched so
+    # this can't break a response body that's only safe to read once.
+    # Reading #each drains the original Rack body, so the app's actual
+    # response has to be replaced with a fresh, replayable one wrapping the
+    # buffered string.
+    def capture_json_response_body(headers, response)
+      content_type = headers && headers["Content-Type"]
+      return [nil, response] if !content_type&.include?("json")
+
+      buffer = +""
+      response.each { |part| buffer << part }
+      response.close if response.respond_to?(:close)
+
+      [RequestTracker::BodyScrubber.scrub_body(buffer, content_type), [buffer]]
     end
   end
 end
