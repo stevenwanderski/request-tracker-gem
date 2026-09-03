@@ -64,6 +64,7 @@ module RequestTracker
         status_code: status,
         request_body: request.filtered_parameters,
         user_agent: request.user_agent,
+        headers: request_headers(request),
         outbound_calls: RequestTracker::Current.outbound_calls,
         enqueued_jobs: RequestTracker::Current.enqueued_jobs,
         sent_mailers: RequestTracker::Current.sent_mailers,
@@ -107,6 +108,33 @@ module RequestTracker
     rescue => e
       warn "[request_tracker] current_user callback raised: #{e.class}: #{e.message}"
       nil
+    end
+
+    # Rack stuffs request headers into env as HTTP_FOO_BAR alongside a pile of
+    # unrelated server/interpreter state (rack.*, action_dispatch.*, PATH,
+    # GATEWAY_INTERFACE, ...) -- the HTTP_ prefix is what separates an actual
+    # header from that noise. HTTP_VERSION is the one HTTP_-prefixed key that
+    # isn't a header (it's the protocol version, e.g. "HTTP/1.1"), so it's
+    # excluded explicitly. Content-Type/Content-Length are real headers too
+    # but Rack promotes them out of the HTTP_ namespace, so they're added back
+    # in by hand.
+    def request_headers(request)
+      headers = {}
+
+      request.env.each do |key, value|
+        next if !value.is_a?(String)
+        next if key == "HTTP_VERSION"
+
+        if key.start_with?("HTTP_")
+          name = key.sub(/\AHTTP_/, "").split("_").map(&:capitalize).join("-")
+          headers[name] = value
+        elsif %w[CONTENT_TYPE CONTENT_LENGTH].include?(key)
+          name = key.split("_").map(&:capitalize).join("-")
+          headers[name] = value
+        end
+      end
+
+      headers
     end
   end
 end
