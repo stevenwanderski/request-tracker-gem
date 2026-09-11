@@ -9,7 +9,7 @@ module RequestTracker
 
       RequestTracker::Current.enqueued_jobs << {
         worker_class: worker_class,
-        args: job["args"],
+        args: RequestTracker::BodyScrubber.scrub_json(job["args"]),
         queue: queue,
         jid: job["jid"]
       }
