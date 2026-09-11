@@ -137,7 +137,7 @@ module RequestTracker
         end
       end
 
-      headers
+      RequestTracker::BodyScrubber.scrub_headers(headers)
     end
 
     # Only JSON responses are captured -- anything else (HTML pages, file

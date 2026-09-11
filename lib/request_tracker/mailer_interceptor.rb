@@ -12,7 +12,7 @@ module RequestTracker
           cc: message.cc,
           bcc: message.bcc,
           subject: message.subject,
-          body: body
+          body: RequestTracker::BodyScrubber.scrub_string(body)
         }
       elsif RequestTracker::Current.executing_job_id
         report(job_id: RequestTracker::Current.executing_job_id, message: message, body: body)
@@ -28,7 +28,7 @@ module RequestTracker
         cc: message.cc,
         bcc: message.bcc,
         subject: message.subject,
-        body: body,
+        body: RequestTracker::BodyScrubber.scrub_string(body),
         api_token: ENV["REQUEST_TRACKER_API_TOKEN"]
       }
 

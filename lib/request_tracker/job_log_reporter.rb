@@ -6,7 +6,7 @@ module RequestTracker
         app_id: ENV["REQUEST_TRACKER_APP_ID"],
         worker_class: worker_class,
         queue: queue,
-        args: args,
+        args: RequestTracker::BodyScrubber.scrub_json(args),
         status: status,
         started_at: started_at,
         completed_at: completed_at,

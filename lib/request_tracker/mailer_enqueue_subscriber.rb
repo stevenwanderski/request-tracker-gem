@@ -14,7 +14,7 @@ module RequestTracker
         RequestTracker::Current.enqueued_mailers << {
           mailer_class: mailer_class,
           action: action,
-          args: args_hash[:args] || args_hash["args"],
+          args: RequestTracker::BodyScrubber.scrub_json(args_hash[:args] || args_hash["args"]),
           queue: job.queue_name,
           job_id: job.job_id
         }

@@ -12,6 +12,30 @@ module RequestTracker
     # surrounding text isn't swallowed into the match.
     PAN_PATTERN = /\b\d(?:[ -]?\d){12,18}\b/.freeze
 
+    # Fallback for header names not explicitly on config.scrubbed_headers --
+    # catches custom auth/session headers (e.g. "X-Internal-Token") without
+    # requiring every integrator to enumerate them by hand.
+    SENSITIVE_HEADER_PATTERN = /token|secret|key|auth|session|cookie|password/i.freeze
+
+    # Redacts header values by name (exact match against config.scrubbed_headers,
+    # or the broader SENSITIVE_HEADER_PATTERN fallback). Any header that doesn't
+    # match either is still run through scrub_string, as cheap insurance against
+    # a PAN turning up somewhere unexpected.
+    def self.scrub_headers(headers)
+      return headers if headers.nil?
+
+      headers.each_with_object({}) do |(name, value), scrubbed|
+        scrubbed[name] = sensitive_header?(name) ? REDACTED : scrub_string(value)
+      end
+    end
+
+    def self.sensitive_header?(name)
+      return false if name.nil?
+
+      RequestTracker.config.scrubbed_headers.any? { |header| header.casecmp?(name) } ||
+        name.match?(SENSITIVE_HEADER_PATTERN)
+    end
+
     def self.scrub_body(raw_body, content_type)
       return raw_body if raw_body.nil?
 
