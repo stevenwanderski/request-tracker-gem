@@ -1,0 +1,83 @@
+<div>
+  <%= render "header" %>
+
+  <% if @hidden %>
+    <% if @hidden_error_classes.any? %>
+      <div class="table-card">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Error Class</th>
+              <th>Muted Since</th>
+              <th>Suppressed</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @hidden_error_classes.each do |hidden_error_class| %>
+              <tr>
+                <td><%= hidden_error_class.error_class %></td>
+                <td class="whitespace-nowrap text-slate-500">
+                  <%= hidden_error_class.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+                </td>
+                <td class="text-slate-700"><%= @hidden_counts_by_class[hidden_error_class.error_class] || 0 %></td>
+                <td class="whitespace-nowrap text-right">
+                  <%= button_to "Unhide", unhide_error_logs_path(error_class: hidden_error_class.error_class), method: :patch, class: "text-[13px] text-slate-500 hover:text-slate-700 bg-transparent border-0 p-0 cursor-pointer hover:underline" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="text-[13px] text-slate-500">
+        No hidden error classes.
+      </div>
+    <% end %>
+  <% else %>
+    <% if @error_logs.any? %>
+      <%= render "request_tracker/shared/result_count", collection: @error_logs, label: "error" %>
+
+      <div class="table-card">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>User</th>
+              <th>Error</th>
+              <th>Message</th>
+              <th>Path</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @error_logs.each do |error_log| %>
+              <tr>
+                <td class="whitespace-nowrap text-slate-500">
+                  <%= error_log.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+                </td>
+                <td class="text-slate-700"><%= current_user_display(error_log.request.current_user) %></td>
+                <td>
+                  <%= link_to error_log.error_class, error_log_path(error_log) %>
+                </td>
+                <td class="text-slate-700" title="<%= error_log.message %>"><%= truncate(error_log.message, length: 100) %></td>
+                <td>
+                  <%= link_to error_log.request.path, request_path(error_log.request) %>
+                </td>
+                <td class="whitespace-nowrap text-right">
+                  <%= button_to "Hide", hide_error_logs_path(error_class: error_log.error_class), method: :patch, class: "text-[13px] text-slate-500 hover:text-slate-700 bg-transparent border-0 p-0 cursor-pointer hover:underline" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%= paginate @error_logs %>
+    <% else %>
+      <div class="text-[13px] text-slate-500">
+        No error logs.
+      </div>
+    <% end %>
+  <% end %>
+</div>

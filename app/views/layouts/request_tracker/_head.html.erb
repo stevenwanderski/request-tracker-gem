@@ -1,0 +1,13 @@
+<title><%= content_for(:title) || "Request Tracker" %></title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Request Tracker">
+<meta name="mobile-web-app-capable" content="yes">
+<%= csrf_meta_tags %>
+<%= csp_meta_tag %>
+
+<%= yield :head %>
+
+<%= stylesheet_link_tag "request_tracker/application" %>
+<%= javascript_include_tag "request_tracker/rails-ujs" %>
+<%= javascript_include_tag "request_tracker/application", defer: true %>

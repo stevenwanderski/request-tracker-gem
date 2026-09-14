@@ -1,7 +1,6 @@
 require_relative "request_tracker/configuration"
-require_relative "request_tracker/configuration_error"
 require_relative "request_tracker/version"
-require_relative "request_tracker/railtie"
+require_relative "request_tracker/engine"
 require_relative "request_tracker/backtrace_context"
 require_relative "request_tracker/middleware"
 require_relative "request_tracker/sidekiq_client_middleware"

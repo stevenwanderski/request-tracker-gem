@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Dev-only: recompiles the static Tailwind CSS shipped with the gem.
+# Requires `npm install` to have run in this directory first (see package.json).
+# Never invoked at gem-install or app-boot time -- the compiled output in
+# app/assets/builds is the only thing that ships with the gem.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+npx tailwindcss \
+  -i tailwind-src/application.css \
+  -o app/assets/builds/request_tracker/application.css \
+  --content "app/views/request_tracker/**/*.erb" \
+  --minify

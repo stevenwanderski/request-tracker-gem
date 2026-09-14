@@ -1,0 +1,155 @@
+<div>
+  <%= render "header" %>
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4 px-3 py-2 rounded-md bg-slate-50 border border-slate-200">
+    <div class="flex flex-wrap items-center gap-2">
+      <% if @saved_searches.any? %>
+        <% @saved_searches.each do |saved_search| %>
+          <span class="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 rounded-full bg-white border border-slate-200 hover:border-slate-300 transition-colors">
+            <%= link_to requests_path(
+              method: saved_search.method,
+              status: saved_search.status_code,
+              path: saved_search.path,
+              outbound_call: saved_search.outbound_call,
+              start_date: @start_date,
+              end_date: @end_date
+            ), class: "text-[12px] font-medium text-slate-700 no-underline hover:no-underline hover:text-slate-900" do %>
+              <%= saved_search.name %>
+            <% end %>
+
+            <%= button_to saved_search_path(saved_search),
+              method: :delete,
+              class: "flex items-center justify-center size-4 rounded-full text-slate-400 hover:text-white hover:bg-slate-400 bg-transparent border-0 p-0 cursor-pointer transition-colors",
+              data: { confirm: "Delete saved search \"#{saved_search.name}\"?" } do %>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-3">
+                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+              </svg>
+            <% end %>
+          </span>
+        <% end %>
+      <% else %>
+        <span class="text-[12px] text-slate-400">No saved searches yet. Set some filters below and save them for quick access.</span>
+      <% end %>
+    </div>
+
+    <details class="relative shrink-0" data-dropdown>
+      <summary class="list-none [&::-webkit-details-marker]:hidden cursor-pointer inline-flex items-center gap-1.5 text-[12px] font-medium text-blue-600 hover:text-blue-700">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-3.5">
+          <path fill-rule="evenodd" d="M5.5 3.25A2.25 2.25 0 0 1 7.75 1h4.5A2.25 2.25 0 0 1 14.5 3.25v15.5a.75.75 0 0 1-1.175.617L10 17.106l-3.325 2.26A.75.75 0 0 1 5.5 18.75V3.25Z" clip-rule="evenodd" />
+        </svg>
+        Save current search
+      </summary>
+
+      <div class="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-md shadow-lg p-3 z-20">
+        <%= form_with url: saved_searches_path, method: :post do %>
+          <%= hidden_field_tag :method, @method %>
+          <%= hidden_field_tag :status, @status %>
+          <%= hidden_field_tag :path, @path %>
+          <%= hidden_field_tag :outbound_call, @outbound_call %>
+
+          <label class="text-xs font-medium text-slate-500 block mb-1">Name</label>
+          <%= text_field_tag :name, nil, placeholder: "e.g. Server errors", required: true, class: "w-full mb-2" %>
+          <%= submit_tag "Save", name: nil, class: "btn w-full" %>
+        <% end %>
+      </div>
+    </details>
+  </div>
+
+  <%= form_with url: request.path, method: :get, class: "flex flex-wrap items-end gap-x-4 gap-y-3 mb-5 pb-4 border-b border-slate-200" do |f| %>
+    <div class="flex flex-col gap-1 flex-1 min-w-48">
+      <label class="text-xs font-medium text-slate-500">Path</label>
+      <div class="relative">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+          <path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.69 4.69a.75.75 0 1 1-1.06 1.06l-4.69-4.69A8.25 8.25 0 0 1 2.25 10.5Z" clip-rule="evenodd" />
+        </svg>
+        <%= text_field_tag :path, @path, placeholder: "Filter by path", class: "pl-8" %>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1 flex-1 min-w-48">
+      <label class="text-xs font-medium text-slate-500">Outbound Call</label>
+      <div class="relative">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+          <path fill-rule="evenodd" d="M10.5 3.75a6.75 6.75 0 1 0 0 13.5 6.75 6.75 0 0 0 0-13.5ZM2.25 10.5a8.25 8.25 0 1 1 14.59 5.28l4.69 4.69a.75.75 0 1 1-1.06 1.06l-4.69-4.69A8.25 8.25 0 0 1 2.25 10.5Z" clip-rule="evenodd" />
+        </svg>
+        <%= text_field_tag :outbound_call, @outbound_call, placeholder: "e.g. paypal.com", class: "pl-8" %>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1 w-28">
+      <label class="text-xs font-medium text-slate-500">Method</label>
+      <%= f.select :method, options_for_select(%w[GET POST PUT PATCH DELETE], @method), { include_blank: "All" } %>
+    </div>
+
+    <div class="flex flex-col gap-1 w-24">
+      <label class="text-xs font-medium text-slate-500">Status</label>
+      <%= text_field_tag :status, @status, placeholder: "e.g. 500" %>
+    </div>
+
+    <div class="flex items-end gap-1.5">
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-medium text-slate-500">From</label>
+        <%= date_field_tag :start_date, @start_date, class: "w-[9.5rem]" %>
+      </div>
+
+      <span class="text-slate-300 pb-2">&rarr;</span>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-xs font-medium text-slate-500">To</label>
+        <%= date_field_tag :end_date, @end_date, class: "w-[9.5rem]" %>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <%= submit_tag "Apply", name: nil %>
+      <%= link_to "Clear", request.path, class: "btn-secondary" %>
+    </div>
+  <% end %>
+
+  <% if @requests.any? %>
+    <%= render "request_tracker/shared/result_count", collection: @requests, label: "request" %>
+
+    <div class="table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>User</th>
+            <th>Browser</th>
+            <th>Status</th>
+            <th>Method</th>
+            <th>Path</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @requests.each do |r| %>
+            <%
+              badge_class = case r.status_code
+                when "500" then "badge-red"
+                when "404" then "badge-amber"
+                else "badge-green"
+              end
+            %>
+
+            <tr>
+              <td class="whitespace-nowrap text-slate-500"><%= r.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %></td>
+              <td class="text-slate-700"><%= current_user_display(r.current_user) %></td>
+              <td><%= render "request_tracker/shared/browser_icon", browser: r.browser %></td>
+              <td><span class="badge <%= badge_class %>"><%= r.status_code %></span></td>
+              <td class="font-mono text-xs text-slate-500"><%= r.method.upcase %></td>
+              <td>
+                <%= link_to r.path, request_path(r) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%= paginate @requests %>
+  <% else %>
+    <div class="text-[13px] text-slate-500">
+      No requests.
+    </div>
+  <% end %>
+</div>

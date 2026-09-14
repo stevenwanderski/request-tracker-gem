@@ -1,7 +1,14 @@
 module RequestTracker
   class Middleware
     IGNORED_PREFIXES = %w[/assets /packs /favicon.ico /cable].freeze
-    DEFAULT_API_URL = "https://request-tracker-33339aabecdd.herokuapp.com/requests".freeze
+
+    # The dashboard's own mount path is chosen by the host app (`mount
+    # RequestTracker::Engine => "/wherever"`), so it can't be matched by
+    # prefix the way IGNORED_PREFIXES is. Instead this is checked after
+    # dispatch, against whichever controller actually served the request --
+    # which also correctly respects any auth constraint the host wraps the
+    # mount in, unlike trying to pre-recognize the route ourselves.
+    ENGINE_CONTROLLER_PREFIX = "#{RequestTracker.name.underscore}/".freeze
 
     def initialize(app)
       @app = app
@@ -16,9 +23,6 @@ module RequestTracker
         return @app.call(env)
       end
 
-      api_url = ENV.fetch("REQUEST_TRACKER_API_URL", DEFAULT_API_URL)
-      ignored_hosts = [api_url]
-
       RequestTracker::Current.outbound_calls = []
       RequestTracker::Current.enqueued_jobs = []
       RequestTracker::Current.sent_mailers = []
@@ -29,25 +33,26 @@ module RequestTracker
       if IGNORED_PREFIXES.any? { |prefix| request.path.starts_with?(prefix) }
         return @app.call(env)
       end
-      if ignored_hosts.include?(request.host_with_port)
-        return @app.call(env)
-      end
 
       request.session[:flow_id] ||= SecureRandom.uuid
 
       begin
         status, headers, response = @app.call(env)
       rescue => e
-        error_payload = {
-          error_class: e.class,
-          message: e.message,
-          stack_trace: RequestTracker::BacktraceContext.build(e)
-        }
+        if !request_tracker_route?(request)
+          error_payload = {
+            error_class: e.class,
+            message: e.message,
+            stack_trace: RequestTracker::BacktraceContext.build(e)
+          }
 
-        report(request: request, status: "500", headers: headers, error_payload: error_payload)
+          report(request: request, status: "500", headers: headers, error_payload: error_payload)
+        end
 
         raise
       end
+
+      return [status, headers, response] if request_tracker_route?(request)
 
       response_body, response = capture_json_response_body(headers, response)
 
@@ -56,46 +61,65 @@ module RequestTracker
       [status, headers, response]
     end
 
+    # A failure here must never take down the actual request -- whatever
+    # happens inside this method, the host app's response always wins.
     def report(request:, status:, headers:, response_body: nil, error_payload: nil)
-      payload = {
-        flow_id: request.session[:flow_id],
-        app_id: ENV["REQUEST_TRACKER_APP_ID"],
-        referer: request.referer,
-        path: request.path,
-        method: request.method,
-        status_code: status,
-        request_body: request.filtered_parameters,
-        user_agent: request.user_agent,
-        headers: request_headers(request),
-        response_body: response_body,
-        outbound_calls: RequestTracker::Current.outbound_calls,
-        enqueued_jobs: RequestTracker::Current.enqueued_jobs,
-        sent_mailers: RequestTracker::Current.sent_mailers,
-        enqueued_mailers: RequestTracker::Current.enqueued_mailers,
-        current_user: current_user_data(request),
-        api_token: ENV["REQUEST_TRACKER_API_TOKEN"]
-      }
+      ActiveRecord::Base.transaction do
+        req = RequestTracker::Request.new(
+          flow_id: request.session[:flow_id],
+          referer: request.referer,
+          path: request.path,
+          method: request.method,
+          status_code: status.to_s,
+          request_body: request.filtered_parameters,
+          user_agent: request.user_agent,
+          headers: request_headers(request),
+          response_body: response_body,
+          outbound_calls: RequestTracker::Current.outbound_calls,
+          job_ids: RequestTracker::Current.enqueued_jobs.to_a.map { |ej| ej[:jid] }.compact,
+          current_user: current_user_data(request)
+        )
+        req.location = headers["Location"] if headers.present?
 
-      payload[:location] = headers["Location"] if headers.present?
-      payload[:error] = error_payload if error_payload.present?
-
-      Thread.new(payload) do |payload|
-        api_url = ENV.fetch("REQUEST_TRACKER_API_URL", DEFAULT_API_URL)
-
-        begin
-          response = Net::HTTP.post(
-            URI(api_url),
-            payload.to_json,
-            "Content-Type" => "application/json"
+        if error_payload.present?
+          req.build_error_log(
+            error_class: error_payload[:error_class].to_s,
+            message: error_payload[:message],
+            stack_trace: error_payload[:stack_trace]
           )
-          warn "[request_tracker] POST /requests rejected: #{response.code} #{response.body}" if !response.is_a?(Net::HTTPSuccess)
-        rescue => e
-          warn "[request_tracker] Background POST /requests failed: #{e.class}: #{e.message}"
+        end
+
+        req.save!
+
+        RequestTracker::Current.sent_mailers.to_a.each do |sm|
+          RequestTracker::MailerLog.create!(request: req, status: "sent", **sm)
+        end
+
+        RequestTracker::Current.enqueued_mailers.to_a.each do |em|
+          RequestTracker::MailerLog.create!(
+            request: req,
+            status: "enqueued",
+            mailer_class: em[:mailer_class],
+            action: em[:action],
+            args: em[:args],
+            queue: em[:queue],
+            jid: em[:job_id]
+          )
         end
       end
+    rescue => e
+      Rails.logger.warn("[request_tracker] failed to record request: #{e.class}: #{e.message}")
     end
 
     private
+
+    # Reads whatever the router already stored in env during dispatch --
+    # populated before the controller action runs (even if that action then
+    # raises), and reflecting the real routing decision (auth constraints
+    # around the mount included), not a synthetic re-recognition of the path.
+    def request_tracker_route?(request)
+      request.path_parameters[:controller].to_s.start_with?(ENGINE_CONTROLLER_PREFIX)
+    end
 
     # The parent app's callback is arbitrary code we don't control, running
     # inside Rack middleware on every single request -- a bug in it must never

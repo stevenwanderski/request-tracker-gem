@@ -1,0 +1,33 @@
+<%
+  pre_class ||= "font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block"
+  app_lines = lines.select { |line| in_app_backtrace_line?(line) }
+  uid = SecureRandom.hex(4)
+%>
+
+<div>
+  <input type="radio" name="bt-scope-<%= uid %>" id="bt-app-<%= uid %>" class="peer/app hidden" checked>
+  <input type="radio" name="bt-scope-<%= uid %>" id="bt-full-<%= uid %>" class="peer/full hidden">
+
+  <label for="bt-app-<%= uid %>" class="inline-block cursor-pointer mb-2 mr-1 px-2 py-0.5 rounded text-[11px] font-medium text-slate-500 hover:text-slate-700 peer-checked/app:bg-slate-200 peer-checked/app:text-slate-900">
+    App (<%= app_lines.size %>)
+  </label>
+  <label for="bt-full-<%= uid %>" class="inline-block cursor-pointer mb-2 px-2 py-0.5 rounded text-[11px] font-medium text-slate-500 hover:text-slate-700 peer-checked/full:bg-slate-200 peer-checked/full:text-slate-900">
+    Full (<%= lines.size %>)
+  </label>
+
+  <div class="hidden peer-checked/app:block">
+    <% if app_lines.any? %>
+      <div class="<%= pre_class %>">
+        <%= render partial: "request_tracker/shared/backtrace_frame", collection: app_lines, as: :line %>
+      </div>
+    <% else %>
+      <div class="text-[13px] text-slate-500">No application frames in this backtrace.</div>
+    <% end %>
+  </div>
+
+  <div class="hidden peer-checked/full:block">
+    <div class="<%= pre_class %>">
+      <%= render partial: "request_tracker/shared/backtrace_frame", collection: lines, as: :line %>
+    </div>
+  </div>
+</div>

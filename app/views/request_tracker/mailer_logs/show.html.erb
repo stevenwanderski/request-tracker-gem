@@ -1,0 +1,59 @@
+<div>
+  <div class="mb-4 text-[13px]">
+    <%= link_to "← Back to Mailers", mailer_logs_path, class: "text-slate-500 hover:text-slate-700" %>
+  </div>
+
+  <h1 class="text-base font-semibold text-slate-900 mb-1">
+    <%= [@mailer_log.mailer_class, @mailer_log.action].compact.join("#").presence || @mailer_log.subject || "[Not Stored]" %>
+  </h1>
+  <div class="text-xs text-slate-500 mb-4 pb-4 border-b border-slate-200">
+    <%= @mailer_log.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+  </div>
+
+  <div class="text-[13px] space-y-1.5 mb-8">
+    <p><span class="text-slate-500">Status:</span> <span class="font-medium text-slate-900"><%= @mailer_log.status %></span></p>
+
+    <% if @mailer_log.subject.present? %>
+      <p><span class="text-slate-500">Subject:</span> <span class="font-medium text-slate-900"><%= @mailer_log.subject %></span></p>
+    <% end %>
+
+    <% if @mailer_log.to.present? %>
+      <p><span class="text-slate-500">To:</span> <span class="font-medium text-slate-900"><%= Array(@mailer_log.to).join(", ") %></span></p>
+    <% end %>
+
+    <% if @mailer_log.from.present? %>
+      <p><span class="text-slate-500">From:</span> <span class="font-medium text-slate-900"><%= Array(@mailer_log.from).join(", ") %></span></p>
+    <% end %>
+
+    <% if @mailer_log.cc.present? %>
+      <p><span class="text-slate-500">Cc:</span> <span class="font-medium text-slate-900"><%= Array(@mailer_log.cc).join(", ") %></span></p>
+    <% end %>
+
+    <% if @mailer_log.bcc.present? %>
+      <p><span class="text-slate-500">Bcc:</span> <span class="font-medium text-slate-900"><%= Array(@mailer_log.bcc).join(", ") %></span></p>
+    <% end %>
+
+    <% if @mailer_log.queue.present? %>
+      <p><span class="text-slate-500">Queue:</span> <span class="font-medium text-slate-900"><%= @mailer_log.queue %></span></p>
+    <% end %>
+
+    <% if @mailer_log.jid.present? %>
+      <p><span class="text-slate-500">JID:</span> <span class="font-medium text-slate-900"><%= @mailer_log.jid %></span></p>
+    <% end %>
+
+    <% if @mailer_log.request.present? %>
+      <p><span class="text-slate-500">Request:</span> <%= link_to @mailer_log.request.path, request_path(@mailer_log.request), class: 'font-medium' %></p>
+    <% end %>
+  </div>
+
+  <% if @mailer_log.body.present? %>
+    <iframe srcdoc="<%= @mailer_log.body %>" sandbox="" class="w-full bg-white border border-slate-200 rounded-md mb-5" style="height: 600px;"></iframe>
+  <% end %>
+
+  <% if @mailer_log.args.present? %>
+    <details>
+      <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2">Args</summary>
+      <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= JSON.pretty_generate(@mailer_log.args) %></pre>
+    </details>
+  <% end %>
+</div>

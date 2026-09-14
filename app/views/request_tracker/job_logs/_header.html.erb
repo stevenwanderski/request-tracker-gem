@@ -1,0 +1,9 @@
+<div class="mb-5 pb-3 border-b border-slate-200 flex justify-between items-center gap-4">
+  <h1 class="text-base font-semibold text-slate-900">Jobs</h1>
+
+  <%= form_with url: request.path, method: :get, class: "flex items-center gap-2" do |f| %>
+    <%= date_field_tag :start_date, @start_date %>
+    <%= date_field_tag :end_date, @end_date %>
+    <%= submit_tag "Submit", name: nil %>
+  <% end %>
+</div>

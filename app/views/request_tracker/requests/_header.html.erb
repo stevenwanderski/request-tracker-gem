@@ -1,0 +1,8 @@
+<div class="mb-5 pb-3 border-b border-slate-200 flex justify-between items-center gap-4">
+  <h1 class="text-base font-semibold text-slate-900">Requests</h1>
+
+  <div class="tab-group flex gap-1">
+    <%= link_to "By Date", requests_path(start_date: @start_date, end_date: @end_date), class: (action_name == "index" ? "active" : nil) %>
+    <%= link_to "By Count", grouped_requests_path(start_date: @start_date, end_date: @end_date), class: (action_name == "grouped" ? "active" : nil) %>
+  </div>
+</div>

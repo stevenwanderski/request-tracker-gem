@@ -1,0 +1,254 @@
+<%
+  job_logs = @request.job_logs.to_a
+  mailer_logs = @request.mailer_logs.to_a
+  outbound_calls = @request.outbound_calls || []
+
+  badge_class = case @request.status_code
+    when "500" then "badge-red"
+    when "404" then "badge-amber"
+    else "badge-green"
+  end
+%>
+
+<div class="mb-4 text-[13px]">
+  <%= link_to "← Back to Requests", requests_path, class: "text-slate-500 hover:text-slate-700" %>
+</div>
+
+<div class="mb-6 pb-5 border-b border-slate-200">
+  <div class="flex items-center gap-2 flex-wrap">
+    <span class="badge <%= badge_class %>"><%= @request.status_code %></span>
+    <span class="font-mono text-xs font-semibold text-slate-500"><%= @request.method.upcase %></span>
+    <h1 class="text-base font-semibold text-slate-900 break-all"><%= @request.path %></h1>
+  </div>
+
+  <div class="mt-2 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+    <span><%= @request.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %></span>
+
+    <% if @request.current_user.present? && (@request.current_user.is_a?(String) || @request.current_user.is_a?(Numeric)) %>
+      <span><%= @request.current_user %></span>
+    <% end %>
+
+    <% if @request.user_agent.present? %>
+      <span><%= browser_label(@request.browser) %></span>
+    <% end %>
+
+    <% if @request.referer.present? %>
+      <span>from <%= @request.referer %></span>
+    <% end %>
+  </div>
+</div>
+
+<% if @request.error_log.present? %>
+  <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+    <div class="text-xs font-medium tracking-wide text-red-700 mb-2">Error</div>
+    <div class="text-[13px] font-mono text-red-900"><%= "#{@request.error_log.error_class}: #{@request.error_log.message}" %></div>
+
+    <% if @request.error_log.stack_trace.present? %>
+      <details class="mt-3">
+        <summary class="text-xs font-medium tracking-wide text-red-700 cursor-pointer mb-2">Backtrace</summary>
+        <%= render "request_tracker/shared/backtrace", lines: @request.error_log.stack_trace, pre_class: "font-mono text-xs bg-white border border-red-200 rounded-md p-3 overflow-x-auto" %>
+      </details>
+    <% end %>
+  </div>
+<% end %>
+
+<input type="radio" name="request-tab" id="tab-details" class="peer/details hidden" checked>
+<input type="radio" name="request-tab" id="tab-outbound" class="peer/outbound hidden">
+<input type="radio" name="request-tab" id="tab-jobs" class="peer/jobs hidden">
+<input type="radio" name="request-tab" id="tab-mailers" class="peer/mailers hidden">
+
+<div class="tab-labels flex gap-5 border-b border-slate-200 mb-5 text-[13px]">
+  <label for="tab-details" class="cursor-pointer pb-2 -mb-px border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+    Details
+  </label>
+  <label for="tab-outbound" class="cursor-pointer pb-2 -mb-px border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+    Outbound Calls <span class="text-xs">(<%= outbound_calls.size %>)</span>
+  </label>
+  <label for="tab-jobs" class="cursor-pointer pb-2 -mb-px border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+    Jobs <span class="text-xs">(<%= job_logs.size %>)</span>
+  </label>
+  <label for="tab-mailers" class="cursor-pointer pb-2 -mb-px border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+    Mailers <span class="text-xs">(<%= mailer_logs.size %>)</span>
+  </label>
+</div>
+
+<div class="hidden peer-checked/details:block">
+  <div class="text-xs tracking-wide text-slate-500 mb-2">
+    Request Body
+  </div>
+  <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= pretty_body(@request.request_body) %></pre>
+
+  <% if @request.response_body.present? %>
+    <div class="text-xs tracking-wide text-slate-500 mb-2">
+      Response Body
+    </div>
+    <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= pretty_body(@request.response_body) %></pre>
+  <% end %>
+
+  <% if @request.referer.present? %>
+    <div class="text-xs tracking-wide text-slate-500 mb-2">
+      Referer
+    </div>
+    <div class="font-mono text-xs text-slate-700 mb-5"><%= @request.referer %></div>
+  <% end %>
+
+  <% if @request.current_user.present? %>
+    <div class="text-xs tracking-wide text-slate-500 mb-2">
+      Current User
+    </div>
+    <div class="font-mono text-xs text-slate-700 mb-5"><%= @request.current_user.is_a?(String) || @request.current_user.is_a?(Numeric) ? @request.current_user : JSON.pretty_generate(@request.current_user) %></div>
+  <% end %>
+
+  <% if @request.user_agent.present? %>
+    <div class="text-xs tracking-wide text-slate-500 mb-2">
+      Browser
+    </div>
+    <div class="mb-2"><%= render "request_tracker/shared/browser_icon", browser: @request.browser %></div>
+    <div class="font-mono text-xs text-slate-500 mb-5"><%= @request.user_agent %></div>
+  <% end %>
+
+  <% if @request.headers.present? %>
+    <details>
+      <summary class="cursor-pointer text-xs tracking-wide text-slate-500 hover:text-slate-700 mb-2">
+        Headers <span class="text-xs">(<%= @request.headers.size %>)</span>
+      </summary>
+      <div class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto mb-5">
+        <table class="w-full">
+          <% @request.headers.sort.each do |name, value| %>
+            <tr class="align-top">
+              <td class="pr-4 py-0.5 text-slate-500 whitespace-nowrap"><%= name %></td>
+              <td class="py-0.5 text-slate-700 break-all"><%= value %></td>
+            </tr>
+          <% end %>
+        </table>
+      </div>
+    </details>
+  <% end %>
+</div>
+
+<div class="hidden peer-checked/outbound:block">
+  <% if outbound_calls.present? %>
+    <% outbound_calls.each do |oc| %>
+      <details>
+        <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2" title="<%= oc["url"] %>">
+          <%= oc["method"].upcase %> <%= truncate(oc["url"], length: 100) %>
+        </summary>
+        <div>
+          <% if oc["request_body"].present? %>
+            <div class="text-xs tracking-wide text-slate-500 mb-2">
+              Request Body
+            </div>
+            <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= pretty_body(oc["request_body"]) %></pre>
+          <% end %>
+
+          <div class="text-xs tracking-wide text-slate-500 mb-2">
+            Response Body
+          </div>
+          <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= pretty_body(oc["response_body"]) %></pre>
+        </div>
+      </details>
+    <% end %>
+  <% else %>
+    <div class="text-[13px] text-slate-500">No outbound calls.</div>
+  <% end %>
+</div>
+
+<div class="hidden peer-checked/jobs:block">
+  <% if job_logs.present? %>
+    <% job_logs.each do |jl| %>
+      <details>
+        <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2">
+          [<%= jl.status %>] <%= link_to jl.worker_class, job_log_path(jl) %>
+          <% if jl.started_at.present? && jl.completed_at.present? %>
+            &middot; <%= (jl.completed_at - jl.started_at).round(2) %>s
+          <% end %>
+          <% if jl.outbound_calls.present? %>
+            &middot; <span class="text-slate-500">↗ <%= pluralize(jl.outbound_calls.size, "outbound call") %></span>
+          <% end %>
+        </summary>
+        <div>
+          <div class="text-xs tracking-wide text-slate-500 mb-2">
+            Args
+          </div>
+          <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= JSON.pretty_generate(jl.args) %></pre>
+
+          <div class="text-xs tracking-wide text-slate-500 mb-2">
+            JID
+          </div>
+          <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= jl.jid %></pre>
+
+          <% if jl.error_class.present? %>
+            <div class="text-xs tracking-wide text-slate-500 mb-2">
+              Error
+            </div>
+            <pre class="font-mono text-xs bg-red-50 border border-red-200 rounded-md p-3 overflow-x-auto block mb-5"><%= "#{jl.error_class}: #{jl.error_message}" %></pre>
+          <% end %>
+
+          <% if jl.outbound_calls.present? %>
+            <div class="text-xs tracking-wide text-slate-500 mb-2">
+              Outbound Calls
+            </div>
+            <% jl.outbound_calls.each do |oc| %>
+              <details>
+                <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2" title="<%= oc["url"] %>">
+                  <%= oc["method"].upcase %> <%= truncate(oc["url"], length: 100) %>
+                </summary>
+                <div>
+                  <% if oc["request_body"].present? %>
+                    <div class="text-xs tracking-wide text-slate-500 mb-2">
+                      Request Body
+                    </div>
+                    <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= pretty_body(oc["request_body"]) %></pre>
+                  <% end %>
+
+                  <div class="text-xs tracking-wide text-slate-500 mb-2">
+                    Response Body
+                  </div>
+                  <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= pretty_body(oc["response_body"]) %></pre>
+                </div>
+              </details>
+            <% end %>
+          <% end %>
+        </div>
+      </details>
+    <% end %>
+  <% else %>
+    <div class="text-[13px] text-slate-500">No jobs enqueued.</div>
+  <% end %>
+</div>
+
+<div class="hidden peer-checked/mailers:block">
+  <% if mailer_logs.present? %>
+    <% mailer_logs.each do |mailer| %>
+      <details>
+        <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2">
+          [<%= mailer.status %>] <%= [mailer.mailer_class, mailer.action].compact.join("#").presence || mailer.subject || "[Not Stored]" %>
+        </summary>
+        <div>
+          <% if mailer.to.present? %>
+            <div class="text-xs tracking-wide text-slate-500 mb-2">
+              To
+            </div>
+            <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= Array(mailer.to).join(", ") %></pre>
+          <% end %>
+
+          <% if mailer.body.present? %>
+            <div class="text-xs tracking-wide text-slate-500 mb-2">
+              Body
+            </div>
+            <iframe srcdoc="<%= mailer.body %>" sandbox="" class="w-full bg-white border border-slate-200 rounded-md mb-5" style="height: 600px;"></iframe>
+          <% end %>
+
+          <% if mailer.args.present? %>
+            <div class="text-xs tracking-wide text-slate-500 mb-2">
+              Args
+            </div>
+            <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= JSON.pretty_generate(mailer.args) %></pre>
+          <% end %>
+        </div>
+      </details>
+    <% end %>
+  <% else %>
+    <div class="text-[13px] text-slate-500">No mailers.</div>
+  <% end %>
+</div>

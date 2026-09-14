@@ -1,2 +1,4 @@
 .ruby-lsp/
 *.gem
+node_modules/
+package-lock.json
