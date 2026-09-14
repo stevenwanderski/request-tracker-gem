@@ -7,17 +7,20 @@ Gem::Specification.new do |spec|
   spec.email = ["steven.wanderski@gmail.com"]
 
   spec.summary  = "A minimal, sane request tracker for Rails."
-  spec.description = "A minimal, sane request tracker for Rails."
+  spec.description = "A minimal, sane request tracker for Rails, mounted as a self-contained " \
+    "Rails Engine that stores all data in the host app's own PostgreSQL database. " \
+    "Requires PostgreSQL (uses jsonb columns and containment queries)."
   spec.homepage = "https://github.com/stevenwanderski/request-tracker-gem"
   spec.license = "MIT"
 
   spec.required_ruby_version = ">= 3.0.0"
 
-  spec.files = Dir["lib/**/*.rb"]
+  spec.files = Dir["lib/**/*.rb", "app/**/*", "config/**/*", "db/**/*"]
   spec.require_paths = ["lib"]
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
   spec.add_dependency "rails", ">= 7.0"
   spec.add_dependency "nokogiri"
+  spec.add_dependency "kaminari"
 end

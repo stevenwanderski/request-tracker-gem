@@ -1,0 +1,52 @@
+<div>
+  <%= render "header" %>
+
+  <% if @job_logs.any? %>
+    <%= render "request_tracker/shared/result_count", collection: @job_logs, label: "job" %>
+
+    <div class="table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Worker Class</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @job_logs.each do |job_log| %>
+            <%
+              badge_class = case job_log.status
+                when "completed" then "badge-green"
+                when "failed" then "badge-red"
+                else "badge-gray"
+              end
+            %>
+
+            <tr>
+              <td class="whitespace-nowrap text-slate-500">
+                <%= job_log.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+              </td>
+              <td>
+                <%= link_to job_log.worker_class || "[Not Stored]", job_log_path(job_log) %>
+              </td>
+              <td><span class="badge <%= badge_class %>"><%= job_log.status %></span></td>
+              <td>
+                <% if job_log.request.present? %>
+                  <%= link_to job_log.request.path, request_path(job_log.request) %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%= paginate @job_logs %>
+  <% else %>
+    <div class="text-[13px] text-slate-500">
+      No job logs.
+    </div>
+  <% end %>
+</div>

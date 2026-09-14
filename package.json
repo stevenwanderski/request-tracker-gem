@@ -1,0 +1,12 @@
+{
+  "name": "request_tracker-dev",
+  "private": true,
+  "description": "Dev-only tooling for compiling the gem's static dashboard CSS. Not published, not required to install or use the gem.",
+  "scripts": {
+    "build:assets": "./bin/build-assets"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
+  }
+}

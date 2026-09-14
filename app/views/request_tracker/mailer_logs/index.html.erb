@@ -1,0 +1,50 @@
+<div>
+  <%= render "header" %>
+
+  <% if @mailer_logs.any? %>
+    <%= render "request_tracker/shared/result_count", collection: @mailer_logs, label: "mailer" %>
+
+    <div class="table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Mailer</th>
+            <th>To</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @mailer_logs.each do |mailer_log| %>
+            <%
+              badge_class = mailer_log.status == "sent" ? "badge-green" : "badge-gray"
+            %>
+
+            <tr>
+              <td class="whitespace-nowrap text-slate-500">
+                <%= mailer_log.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+              </td>
+              <td><span class="badge <%= badge_class %>"><%= mailer_log.status %></span></td>
+              <td>
+                <%= link_to [mailer_log.mailer_class, mailer_log.action].compact.join("#").presence || mailer_log.subject || "[Not Stored]", mailer_log_path(mailer_log) %>
+              </td>
+              <td class="text-slate-700"><%= Array(mailer_log.to).join(", ") %></td>
+              <td>
+                <% if mailer_log.request.present? %>
+                  <%= link_to mailer_log.request.path, request_path(mailer_log.request) %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%= paginate @mailer_logs %>
+  <% else %>
+    <div class="text-[13px] text-slate-500">
+      No mailers.
+    </div>
+  <% end %>
+</div>

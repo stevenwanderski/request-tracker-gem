@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply font-sans text-[13px] leading-normal text-slate-800 bg-slate-50;
+  }
+
+  h1, h2, h3 {
+    @apply text-slate-900;
+  }
+
+  a {
+    @apply text-blue-600;
+  }
+
+  a:hover {
+    @apply text-blue-700 underline;
+  }
+
+  a.active {
+    @apply underline;
+  }
+
+  header nav a {
+    @apply text-slate-300 no-underline;
+  }
+
+  header nav a:hover {
+    @apply text-white no-underline;
+  }
+
+  header nav a.active {
+    @apply text-white font-semibold no-underline;
+  }
+
+  .tab-group a {
+    @apply text-slate-500 no-underline px-2.5 py-1 rounded-md transition-colors;
+  }
+
+  .tab-group a:hover {
+    @apply text-slate-800 no-underline;
+  }
+
+  .tab-group a.active {
+    @apply bg-slate-100 text-slate-900 font-medium no-underline;
+  }
+
+  .card {
+    @apply bg-white border border-slate-200 rounded-lg shadow-sm;
+  }
+
+  .table-card {
+    @apply border border-slate-200 rounded-lg overflow-hidden;
+  }
+
+  .field {
+    @apply mb-4;
+  }
+
+  .field label,
+  .input label {
+    @apply block text-xs font-medium text-slate-600 mb-1;
+  }
+
+  .hint {
+    @apply block text-xs text-slate-400 mt-1;
+  }
+
+  input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    @apply block w-full border border-slate-300 rounded-md bg-white py-1.5 px-2.5 text-[13px] text-slate-900 placeholder-slate-400;
+  }
+
+  input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]):focus,
+  select:focus,
+  textarea:focus {
+    @apply outline-none border-blue-500 ring-1 ring-blue-500;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply align-middle accent-blue-600;
+  }
+
+  .actions {
+    @apply mt-2;
+  }
+
+  input[type="submit"],
+  .btn {
+    @apply inline-flex items-center justify-center bg-blue-600 text-white py-1.5 px-3.5 cursor-pointer rounded-md text-[13px] font-medium border border-blue-600 hover:bg-blue-700 hover:text-white hover:no-underline transition-colors;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center bg-white text-slate-700 py-1.5 px-3.5 cursor-pointer rounded-md text-[13px] font-medium border border-slate-300 hover:bg-slate-50 hover:text-slate-700 hover:no-underline transition-colors;
+  }
+
+  .admin-table {
+    @apply w-full border-collapse text-[13px];
+  }
+
+  .admin-table th {
+    @apply text-left text-[11px] uppercase tracking-wide text-slate-500 border-b border-slate-200 px-3 py-2 font-medium bg-slate-50;
+  }
+
+  .admin-table td {
+    @apply border-b border-slate-100 px-3 py-2 align-top text-slate-700;
+  }
+
+  .admin-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .admin-table tbody tr:hover {
+    @apply bg-slate-50;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap;
+  }
+
+  .badge-green {
+    @apply bg-green-50 text-green-700;
+  }
+
+  .badge-amber {
+    @apply bg-amber-50 text-amber-700;
+  }
+
+  .badge-red {
+    @apply bg-red-50 text-red-700;
+  }
+
+  .badge-gray {
+    @apply bg-slate-100 text-slate-600;
+  }
+
+  .badge-blue {
+    @apply bg-blue-50 text-blue-700;
+  }
+
+  .pagination {
+    @apply flex flex-wrap items-center justify-center gap-1 mt-4 text-[13px];
+  }
+
+  .pagination .page a,
+  .pagination .page.current,
+  .pagination .page.gap,
+  .pagination .first a,
+  .pagination .prev a,
+  .pagination .next a,
+  .pagination .last a {
+    @apply inline-flex items-center justify-center min-w-8 h-8 px-2 border border-slate-200 rounded-md text-slate-600 no-underline;
+  }
+
+  .pagination a:hover {
+    @apply bg-slate-100 no-underline;
+  }
+
+  .pagination .page.current {
+    @apply bg-blue-600 text-white border-blue-600;
+  }
+
+  .pagination .page.gap {
+    @apply border-none text-slate-400;
+  }
+
+  .field_with_errors .error,
+  .error {
+    @apply block text-xs text-red-600 mt-1;
+  }
+
+  .field_with_errors input,
+  .field_with_errors select,
+  .field_with_errors textarea {
+    @apply border-red-400;
+  }
+}
+
+/* Radio-driven tabs (request show page): the label is nested inside
+   .tab-labels rather than being a direct sibling of its radio, so the
+   peer-checked sibling-combinator can't reach it. :has() on the closest
+   shared ancestor (.card) sidesteps that. Left unlayered so it beats the
+   label's own @layer-utilities classes (border-transparent, text-slate-500)
+   regardless of specificity -- layer order wins over specificity.
+*/
+.card:has(#tab-details:checked) label[for="tab-details"],
+.card:has(#tab-outbound:checked) label[for="tab-outbound"],
+.card:has(#tab-jobs:checked) label[for="tab-jobs"],
+.card:has(#tab-mailers:checked) label[for="tab-mailers"] {
+  border-color: var(--color-blue-600);
+  color: var(--color-blue-600);
+  font-weight: 500;
+}

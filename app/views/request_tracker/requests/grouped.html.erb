@@ -1,0 +1,36 @@
+<div>
+  <%= render "header" %>
+
+  <% if @requests.any? %>
+    <%= render "request_tracker/shared/result_count", collection: @requests, label: "path" %>
+
+    <div class="table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Path</th>
+            <th>Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @requests.each do |r| %>
+            <tr>
+              <td>
+                <%= r.path %>
+              </td>
+              <td>
+                <%= r.count %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%= paginate @requests %>
+  <% else %>
+    <div class="text-[13px] text-slate-500">
+      No requests.
+    </div>
+  <% end %>
+</div>

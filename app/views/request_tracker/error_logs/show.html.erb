@@ -1,0 +1,52 @@
+<div>
+  <div class="mb-4 text-[13px]">
+    <%= link_to "← Back to Errors", error_logs_path, class: "text-slate-500 hover:text-slate-700" %>
+  </div>
+
+  <div class="mb-5 pb-3 border-b border-slate-200 flex justify-between items-center gap-4 flex-wrap">
+    <div>
+      <h1 class="text-base font-semibold text-slate-900 break-all"><%= @error_log.error_class %></h1>
+
+      <div class="mt-1 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+        <span><%= @error_log.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %></span>
+        <%= link_to "#{@error_log.request.method.upcase} #{@error_log.request.path}", request_path(@error_log.request) %>
+
+        <% if @error_log.request.current_user.present? && (@error_log.request.current_user.is_a?(String) || @error_log.request.current_user.is_a?(Numeric)) %>
+          <span><%= @error_log.request.current_user %></span>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @muted %>
+      <%= button_to "Unhide", unhide_error_logs_path(error_class: @error_log.error_class), method: :patch, class: "btn-secondary" %>
+    <% else %>
+      <%= button_to "Hide", hide_error_logs_path(error_class: @error_log.error_class), method: :patch, class: "btn-secondary" %>
+    <% end %>
+  </div>
+
+  <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+    <div class="text-xs font-medium tracking-wide text-red-700 mb-2">Error</div>
+    <div class="text-[13px] font-mono text-red-900"><%= "#{@error_log.error_class}: #{@error_log.message}" %></div>
+
+    <% if @error_log.stack_trace.present? %>
+      <details class="mt-3">
+        <summary class="text-xs font-medium tracking-wide text-red-700 cursor-pointer mb-2">Backtrace</summary>
+        <%= render "request_tracker/shared/backtrace", lines: @error_log.stack_trace, pre_class: "font-mono text-xs bg-white border border-red-200 rounded-md p-3 overflow-x-auto" %>
+      </details>
+    <% end %>
+  </div>
+
+  <% if @error_log.request.request_body.present? %>
+    <div class="text-xs tracking-wide text-slate-500 mb-2">
+      Request Body
+    </div>
+    <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= pretty_body(@error_log.request.request_body) %></pre>
+  <% end %>
+
+  <% if @error_log.request.current_user.present? %>
+    <div class="text-xs tracking-wide text-slate-500 mb-2">
+      Current User
+    </div>
+    <div class="font-mono text-xs text-slate-700 mb-5"><%= @error_log.request.current_user.is_a?(String) || @error_log.request.current_user.is_a?(Numeric) ? @error_log.request.current_user : JSON.pretty_generate(@error_log.request.current_user) %></div>
+  <% end %>
+</div>

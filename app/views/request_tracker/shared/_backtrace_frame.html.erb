@@ -1,0 +1,34 @@
+<%
+  text = backtrace_line_text(line)
+  code = backtrace_line_code(line)
+  uid = SecureRandom.hex(4)
+%>
+
+<div class="mb-1.5 last:mb-0">
+  <% if code %>
+    <label for="bt-frame-<%= uid %>" class="cursor-pointer whitespace-pre-wrap break-all block hover:text-slate-900"><span class="text-slate-400 mr-1">▸</span><%= text %></label>
+    <input type="checkbox" id="bt-frame-<%= uid %>" class="peer hidden">
+    <div class="hidden peer-checked:block mt-1 mb-2 ml-3 border border-slate-200 rounded overflow-x-auto bg-white">
+      <% code["lines"].each_with_index do |src, i| %>
+        <%
+          lineno = code["start_line"] + i
+          is_error_line = lineno == code["error_line"]
+        %>
+        <div class="flex <%= "bg-red-50" if is_error_line %>">
+          <span class="w-10 shrink-0 text-right pr-2 text-slate-400 select-none"><%= lineno %></span>
+          <span class="whitespace-pre pr-3 <%= "text-red-900 font-semibold" if is_error_line %>"><%= src %></span>
+        </div>
+
+        <% if is_error_line && code["highlight"] %>
+          <% hl = code["highlight"] %>
+          <div class="flex">
+            <span class="w-10 shrink-0"></span>
+            <span class="whitespace-pre pr-3 text-red-500"><%= (" " * hl["start_col"]) + ("^" * [hl["end_col"] - hl["start_col"], 1].max) %></span>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="whitespace-pre-wrap break-all"><%= text %></div>
+  <% end %>
+</div>

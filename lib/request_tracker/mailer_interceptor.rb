@@ -20,35 +20,18 @@ module RequestTracker
     end
 
     def self.report(job_id:, message:, body:)
-      payload = {
-        job_id: job_id,
-        app_id: ENV["REQUEST_TRACKER_APP_ID"],
+      RequestTracker::MailerLog.create!(
+        jid: job_id,
+        status: "sent",
         to: message.to,
         from: message.from,
         cc: message.cc,
         bcc: message.bcc,
         subject: message.subject,
-        body: RequestTracker::BodyScrubber.scrub_string(body),
-        api_token: ENV["REQUEST_TRACKER_API_TOKEN"]
-      }
-
-      Thread.new(payload) do |payload|
-        begin
-          response = Net::HTTP.post(
-            URI(mailer_api_url),
-            payload.to_json,
-            "Content-Type" => "application/json"
-          )
-          warn "[request_tracker] POST /mailers rejected: #{response.code} #{response.body}" if !response.is_a?(Net::HTTPSuccess)
-        rescue => e
-          warn "[request_tracker] Background POST /mailers failed: #{e.class}: #{e.message}"
-        end
-      end
-    end
-
-    def self.mailer_api_url
-      requests_url = ENV.fetch("REQUEST_TRACKER_API_URL", RequestTracker::Middleware::DEFAULT_API_URL)
-      requests_url.sub(%r{/requests\z}, "/mailers")
+        body: RequestTracker::BodyScrubber.scrub_string(body)
+      )
+    rescue => e
+      Rails.logger.warn("[request_tracker] failed to record mailer log job_id=#{job_id}: #{e.class}: #{e.message}")
     end
   end
 end

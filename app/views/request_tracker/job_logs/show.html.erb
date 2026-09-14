@@ -1,0 +1,91 @@
+<div>
+  <div class="mb-4 text-[13px]">
+    <%= link_to "← Back to Jobs", job_logs_path, class: "text-slate-500 hover:text-slate-700" %>
+  </div>
+
+  <h1 class="text-base font-semibold text-slate-900 mb-1">
+    <%= @job_log.worker_class || "[Not Stored]" %>
+  </h1>
+  <div class="text-xs text-slate-500 mb-4 pb-4 border-b border-slate-200">
+    <%= @job_log.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+  </div>
+
+  <div class="text-[13px] space-y-1.5 mb-8">
+    <p><span class="text-slate-500">Status:</span> <span class="font-medium text-slate-900"><%= @job_log.status %></span></p>
+
+    <% if @job_log.queue.present? %>
+      <p><span class="text-slate-500">Queue:</span> <span class="font-medium text-slate-900"><%= @job_log.queue %></span></p>
+    <% end %>
+
+    <% if @job_log.started_at.present? %>
+      <p><span class="text-slate-500">Started:</span> <span class="font-medium text-slate-900"><%= @job_log.started_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %></span></p>
+    <% end %>
+
+    <% if @job_log.completed_at.present? %>
+      <p><span class="text-slate-500">Completed:</span> <span class="font-medium text-slate-900"><%= @job_log.completed_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %></span></p>
+    <% end %>
+
+    <% if @job_log.started_at.present? && @job_log.completed_at.present? %>
+      <p><span class="text-slate-500">Duration:</span> <span class="font-medium text-slate-900"><%= (@job_log.completed_at - @job_log.started_at).round(2) %>s</span></p>
+    <% end %>
+
+    <p><span class="text-slate-500">JID:</span> <span class="font-medium text-slate-900"><%= @job_log.jid %></span></p>
+
+    <% if @job_log.request.present? %>
+      <p><span class="text-slate-500">Request:</span> <%= link_to @job_log.request.path, request_path(@job_log.request), class: 'font-medium' %></p>
+    <% end %>
+  </div>
+
+  <% if @job_log.args.present? %>
+    <details>
+      <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2">Args</summary>
+      <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= JSON.pretty_generate(@job_log.args) %></pre>
+    </details>
+  <% end %>
+
+  <% if @job_log.error_class.present? %>
+    <div class="text-xs tracking-wide text-slate-500 mb-2">
+      Error
+    </div>
+    <pre class="font-mono text-xs bg-red-50 border border-red-200 rounded-md p-3 overflow-x-auto block mb-5"><%= "#{@job_log.error_class}: #{@job_log.error_message}" %></pre>
+
+    <% if @job_log.error_backtrace.present? %>
+      <details>
+        <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2">Backtrace</summary>
+        <%= render "request_tracker/shared/backtrace", lines: @job_log.error_backtrace %>
+      </details>
+    <% end %>
+  <% end %>
+
+  <% if @job_log.outbound_calls.present? %>
+    <h2 class="text-sm font-semibold text-slate-900 mt-6 mb-4 pb-2 border-b border-slate-200">Outbound Calls</h2>
+
+    <% @job_log.outbound_calls.each do |oc| %>
+      <details>
+        <summary class="cursor-pointer text-xs font-medium tracking-wide text-slate-500 hover:text-slate-700 mb-2">
+          <%= oc["method"].upcase %> <%= oc["url"] %>
+        </summary>
+        <div>
+          <div class="text-xs tracking-wide text-slate-500 mb-2">
+            Request Body
+          </div>
+          <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= JSON.pretty_generate(oc["request_body"]) %></pre>
+
+          <div class="text-xs tracking-wide text-slate-500 mb-2">
+            Response Body
+          </div>
+          <pre class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-md p-3 overflow-x-auto block mb-5"><%= JSON.pretty_generate(oc["response_body"]) %></pre>
+        </div>
+      </details>
+    <% end %>
+  <% end %>
+
+  <% if @job_log.mailer_logs.present? %>
+    <h2 class="text-sm font-semibold text-slate-900 mt-6 mb-4 pb-2 border-b border-slate-200">Mailers</h2>
+    <% @job_log.mailer_logs.each do |ml| %>
+      <div class="text-[13px] mb-2">
+        <%= link_to [ml.mailer_class, ml.action].compact.join("#").presence || ml.subject || "[Not Stored]", mailer_log_path(ml) %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
