@@ -193,3 +193,16 @@
   color: var(--color-blue-600);
   font-weight: 500;
 }
+
+/* Journey view: background requests (XHR, Turbo frames, prefetches) are
+   hidden until the "show background requests" checkbox is ticked. The steps
+   are nested inside per-visit groups, so this goes through :has() on the
+   card rather than a peer-checked sibling selector.
+*/
+.journey-step-background {
+  display: none;
+}
+
+.card:has(#show-background:checked) .journey-step-background {
+  display: flex;
+}

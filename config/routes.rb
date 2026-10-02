@@ -12,6 +12,7 @@ RequestTracker::Engine.routes.draw do
     end
   end
 
+  resources :flows, only: [:show]
   resources :job_logs, only: [:index, :show]
   resources :mailer_logs, only: [:index, :show]
   resources :saved_searches, only: [:create, :destroy]

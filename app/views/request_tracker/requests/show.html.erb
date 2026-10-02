@@ -35,6 +35,10 @@
     <% if @request.referer.present? %>
       <span>from <%= @request.referer %></span>
     <% end %>
+
+    <% if @request.flow_id.present? %>
+      <%= link_to "View journey →", flow_path(@request.flow_id, step: @request.id, anchor: "step-#{@request.id}") %>
+    <% end %>
   </div>
 </div>
 

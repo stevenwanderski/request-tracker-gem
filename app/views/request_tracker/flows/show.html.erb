@@ -1,0 +1,137 @@
+<%
+  first_request = @requests.first
+  last_request = @requests.last
+  highlighted_id = params[:step].to_i
+  # Collapse runs rather than uniq, so a sign-in (or sign-out) mid-journey
+  # reads as a sequence: "anonymous → donor@example.com".
+  users = @requests.map { |r| current_user_display(r.current_user) || "anonymous" }.chunk_while { |a, b| a == b }.map(&:first)
+  users = [] if users == ["anonymous"]
+  browsers = @requests.map { |r| r.browser }.compact.uniq
+  background_count = @requests.count { |r| background_request?(r) }
+  error_count = @requests.count { |r| r.error_log.present? }
+%>
+
+<div class="mb-4 text-[13px]">
+  <%= link_to "← Back to Requests", requests_path, class: "text-slate-500 hover:text-slate-700" %>
+</div>
+
+<div class="mb-6 pb-5 border-b border-slate-200">
+  <div class="flex items-center gap-2 flex-wrap">
+    <h1 class="text-base font-semibold text-slate-900">Journey</h1>
+    <span class="font-mono text-xs text-slate-500"><%= @flow_id %></span>
+  </div>
+
+  <div class="mt-2 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+    <span>
+      <%= first_request.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+      → <%= last_request.created_at.localtime.strftime("%Y-%m-%d %-I:%M:%S %p") %>
+    </span>
+    <span><%= pluralize(@total_count, "request") %></span>
+    <span><%= pluralize(@visits.size, "visit") %></span>
+
+    <% if error_count > 0 %>
+      <span class="text-red-600"><%= pluralize(error_count, "error") %></span>
+    <% end %>
+
+    <% if users.present? %>
+      <span title="Changes here usually mean a sign-in or sign-out mid-journey"><%= users.join(" → ") %></span>
+    <% end %>
+
+    <% if browsers.present? %>
+      <span><%= browsers.join(", ") %></span>
+    <% end %>
+  </div>
+
+  <% if @total_count > @requests.size %>
+    <div class="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+      Showing the most recent <%= @requests.size %> of <%= @total_count %> requests in this flow.
+    </div>
+  <% end %>
+</div>
+
+<% if background_count > 0 %>
+  <label class="mb-5 inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+    <input type="checkbox" id="show-background">
+    Show background requests <span class="text-slate-400">(<%= background_count %> XHR, Turbo frame, and prefetch requests hidden)</span>
+  </label>
+<% end %>
+
+<% previous = nil %>
+<% previous_step = nil %>
+<% @visits.each_with_index do |visit, visit_index| %>
+  <% if @visits.size > 1 %>
+    <div class="text-[11px] uppercase tracking-wide text-slate-400 font-medium mb-3 <%= "mt-8" if visit_index > 0 %>">
+      Visit <%= visit_index + 1 %>
+      <% if previous %>
+        &middot; <span class="normal-case tracking-normal"><%= elapsed_label(visit.first.created_at - previous.created_at) %> later</span>
+      <% end %>
+    </div>
+  <% end %>
+
+  <ol class="border-l border-slate-200 ml-[88px]">
+    <% visit.each do |req| %>
+      <%
+        background = background_request?(req) && req.id != highlighted_id
+        job_logs = req.job_ids.map { |jid| @job_logs_by_jid[jid] }.compact
+        mailer_logs = @mailer_logs_by_request_id[req.id]
+        outbound_count = (req.outbound_calls || []).size
+        dot_class = if req.error_log.present? then "bg-red-500"
+          elsif req.method.upcase != "GET" then "bg-blue-600"
+          else "bg-slate-300"
+        end
+      %>
+      <li id="step-<%= req.id %>" class="relative flex gap-4 pb-5 pl-5 <%= "journey-step-background" if background %>">
+        <div class="absolute -left-[88px] w-[76px] text-right text-[11px] leading-5 text-slate-400 font-mono">
+          <div><%= req.created_at.localtime.strftime("%-I:%M:%S %p") %></div>
+          <% if previous_step && visit.first != req && !background %>
+            <div class="text-slate-300"><%= elapsed_label(req.created_at - previous_step.created_at) %></div>
+          <% end %>
+        </div>
+        <span class="absolute -left-[5px] top-1.5 size-2.5 rounded-full ring-4 ring-white <%= dot_class %>"></span>
+
+        <div class="min-w-0 flex-1 <%= "bg-blue-50 -mx-2 px-2 py-1 rounded-md" if req.id == highlighted_id %>">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-mono text-xs font-semibold <%= req.method.upcase == "GET" ? "text-slate-500" : "text-blue-700" %>"><%= req.method.upcase %></span>
+            <%= link_to req.path, request_path(req), class: "font-mono text-[13px] break-all" %>
+            <span class="badge <%= journey_status_badge_class(req.status_code) %>"><%= req.status_code %></span>
+            <% if background_request?(req) %>
+              <span class="badge badge-gray">background</span>
+            <% end %>
+          </div>
+
+          <% if req.location.present? %>
+            <div class="mt-1 text-xs text-slate-500">↳ redirected to <span class="font-mono"><%= req.location %></span></div>
+          <% end %>
+
+          <% if req.error_log.present? %>
+            <div class="mt-1 text-xs font-mono text-red-700">
+              <%= link_to truncate("#{req.error_log.error_class}: #{req.error_log.message}", length: 160, escape: false), error_log_path(req.error_log), class: "text-red-700" %>
+            </div>
+          <% end %>
+
+          <% if job_logs.present? || mailer_logs.present? || outbound_count > 0 %>
+            <div class="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+              <% job_logs.each do |jl| %>
+                <%= link_to job_log_path(jl), class: "badge #{jl.status == "failed" ? "badge-red" : "badge-gray"} hover:no-underline" do %>
+                  ⚙ <%= jl.worker_class %> &middot; <%= jl.status %>
+                <% end %>
+              <% end %>
+
+              <% mailer_logs.each do |ml| %>
+                <%= link_to mailer_log_path(ml), class: "badge badge-gray hover:no-underline" do %>
+                  ✉ <%= [ml.mailer_class, ml.action].compact.join("#").presence || ml.subject || "Mailer" %> &middot; <%= ml.status %>
+                <% end %>
+              <% end %>
+
+              <% if outbound_count > 0 %>
+                <span class="badge badge-gray">↗ <%= pluralize(outbound_count, "outbound call") %></span>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </li>
+      <% previous = req %>
+      <% previous_step = req if !background %>
+    <% end %>
+  </ol>
+<% end %>
